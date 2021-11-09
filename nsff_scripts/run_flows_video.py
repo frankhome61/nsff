@@ -87,102 +87,20 @@ def run_maskrcnn(model, img_path): #, intWidth=1024, intHeight=576):
 def motion_segmentation(basedir, threshold):
     import colmap_read_model as read_model
 
-    points3dfile = os.path.join(basedir, 'sparse/points3D.bin')
-    pts3d = read_model.read_points3d_binary(points3dfile)
+    #points3dfile = os.path.join(basedir, 'sparse/points3D.bin')
+    #pts3d = read_model.read_points3d_binary(points3dfile)
 
     img_dir = glob.glob(basedir + '/images_*x*')[0]  
     img0 = os.path.join(glob.glob(img_dir)[0], '%05d.png'%0)
     shape_0 = cv2.imread(img0).shape
-
     resized_height, resized_width = shape_0[0], shape_0[1]
 
-    imdata, perm, img_keys, hwf = load_colmap_data(basedir)
-    scale_x, scale_y = resized_width / float(hwf[1]), resized_height / float(hwf[0])
-
-    K = np.eye(3)
-    K[0, 0] = hwf[2] * scale_x
-    K[0, 2] = hwf[1] / 2. * scale_x
-    K[1, 1] = hwf[2] * scale_y
-    K[1, 2] = hwf[0] / 2. * scale_y
-
-    xx = range(0, resized_width)
-    yy = range(0, resized_height)  # , self.resized_h)
-    xv, yv = np.meshgrid(xx, yy)
-    p_ref = np.float32(np.stack((xv, yv), axis=-1))
-    p_ref_h = np.reshape(p_ref, (-1, 2))
-    p_ref_h = np.concatenate((p_ref_h, np.ones((p_ref_h.shape[0], 1))), axis=-1).T
-
-    num_frames = len(perm) #- 1
-
-    save_mask_dir = os.path.join(basedir, 'motion_segmentation')
-    os.makedirs(save_mask_dir, exist_ok=True)
-
-    for i in range(0, num_frames): #len(perm) - 1):
-        im_prev = imdata[img_keys[perm[max(0, i - 1)]]]
-        im_ref = imdata[img_keys[perm[i]]]
-        im_post = imdata[img_keys[perm[min(num_frames -1, i + 1)]]]
-
-        print(im_prev.name, im_ref.name, im_post.name)
-
-        T_prev_G = extract_poses(im_prev)        
-        T_ref_G = extract_poses(im_ref)
-        T_post_G = extract_poses(im_post)
-
-        T_ref2prev = np.dot(T_prev_G, np.linalg.inv(T_ref_G))
-        T_ref2post = np.dot(T_post_G, np.linalg.inv(T_ref_G))
-        # load optical flow 
-        if i == 0:
-          fwd_flow, fwd_mask = read_optical_flow(basedir, 
-                                       im_ref.name, 
-                                       read_fwd=True)
-          bwd_flow = np.zeros_like(fwd_flow)
-          bwd_mask = np.zeros_like(fwd_mask)
-
-        elif i == num_frames - 1:
-          bwd_flow, bwd_mask = read_optical_flow(basedir, 
-                                       im_ref.name, 
-                                       read_fwd=False)
-          fwd_flow = np.zeros_like(bwd_flow)
-          fwd_mask = np.zeros_like(bwd_mask)
-
-        else:
-          fwd_flow, fwd_mask = read_optical_flow(basedir, 
-                                       im_ref.name, 
-                                       read_fwd=True)
-          bwd_flow, bwd_mask = read_optical_flow(basedir, 
-                                       im_ref.name, 
-                                       read_fwd=False)
-
-        p_post = p_ref + fwd_flow
-        p_post_h = np.reshape(p_post, (-1, 2))
-        p_post_h = np.concatenate((p_post_h, np.ones((p_post_h.shape[0], 1))), axis=-1).T
-
-        fwd_e_dist = compute_epipolar_distance(T_ref2post, K, 
-                                               p_ref_h, p_post_h)
-        fwd_e_dist = np.reshape(fwd_e_dist, (fwd_flow.shape[0], fwd_flow.shape[1]))
-
-        p_prev = p_ref + bwd_flow
-        p_prev_h = np.reshape(p_prev, (-1, 2))
-        p_prev_h = np.concatenate((p_prev_h, np.ones((p_prev_h.shape[0], 1))), axis=-1).T
-
-        bwd_e_dist = compute_epipolar_distance(T_ref2prev, K, 
-                                               p_ref_h, 
-                                               p_prev_h)
-        bwd_e_dist = np.reshape(bwd_e_dist, (bwd_flow.shape[0], bwd_flow.shape[1]))
-
-        # e_dist = np.maximum(bwd_e_dist, fwd_e_dist)
-        # for non-video sequence
-        e_dist = np.maximum(bwd_e_dist * bwd_mask, fwd_e_dist * fwd_mask)
-
-        motion_mask = skimage.morphology.binary_opening(e_dist > threshold, skimage.morphology.disk(1))
-
-        cv2.imwrite(os.path.join(save_mask_dir, im_ref.name.replace('.jpg', '.png')), np.uint8(255 * (0. + motion_mask)))
 
     # RUN SEMANTIC SEGMENTATION
     img_dir = os.path.join(basedir, 'images')
     img_path_list = sorted(glob.glob(os.path.join(img_dir, '*.jpg'))) \
                     + sorted(glob.glob(os.path.join(img_dir, '*.png')))
-    semantic_mask_dir = os.path.join(basedir, 'semantic_mask')
+    semantic_mask_dir = os.path.join(basedir, 'motion_masks')
     netMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().eval()
     os.makedirs(semantic_mask_dir, exist_ok=True)
 
@@ -195,38 +113,7 @@ def motion_segmentation(basedir, threshold):
                                 img_name.replace('.jpg', '.png')), 
                     semantic_mask)
 
-    # combine them
-    save_mask_dir = os.path.join(basedir, 'motion_masks')
-    os.makedirs(save_mask_dir, exist_ok=True)
 
-    mask_dir = os.path.join(basedir, 'motion_segmentation')
-    mask_path_list = sorted(glob.glob(os.path.join(mask_dir, '*.png')))
-
-    semantic_dir = os.path.join(basedir, 'semantic_mask')
-
-    for mask_path in mask_path_list:
-        print(mask_path)
-
-        motion_mask = cv2.imread(mask_path)
-        motion_mask = cv2.resize(motion_mask, (resized_width, resized_height), 
-                                interpolation=cv2.INTER_NEAREST) 
-        motion_mask = motion_mask[:, :, 0] > 0.1
-
-        # combine from motion segmentation
-        semantic_mask = cv2.imread(os.path.join(semantic_dir, mask_path.split('/')[-1]))
-        semantic_mask = cv2.resize(semantic_mask, (resized_width, resized_height), 
-                                interpolation=cv2.INTER_NEAREST)
-        semantic_mask = semantic_mask[:, :, 0] > 0.1
-        motion_mask = semantic_mask | motion_mask
-
-        motion_mask = skimage.morphology.dilation(motion_mask, skimage.morphology.disk(2))
-        cv2.imwrite(os.path.join(save_mask_dir, '%s'%mask_path.split('/')[-1]), 
-                    np.uint8(np.clip((motion_mask), 0, 1) * 255) )
-        # cv2.imwrite(os.path.join(mask_img_dir, '%s'%mask_path.split('/')[-1]), np.uint8(np.clip( (1. - motion_mask[..., np.newaxis]) * image, 0, 1) * 255) )
-
-    # delete old mask dir
-    os.system('rm -r %s'%mask_dir)
-    os.system('rm -r %s'%semantic_dir)
 
 
 def load_image(imfile):
@@ -335,6 +222,7 @@ def run_optical_flows(args):
     img_dir = glob.glob(basedir + '/images_*')[0]  #basedir + '/images_*288'  
 
     img_path_train = os.path.join(glob.glob(img_dir)[0], '%05d.png'%0)
+    print(img_path_train)
     img_train = cv2.imread(img_path_train)
 
     interval = 1    
@@ -347,6 +235,7 @@ def run_optical_flows(args):
         images = glob.glob(os.path.join(basedir, 'images/', '*.png')) + \
                  glob.glob(os.path.join(basedir, 'images/', '*.jpg'))
 
+
         images = load_image_list(images)
         for i in range(images.shape[0]-1):
             print(i)
@@ -358,6 +247,7 @@ def run_optical_flows(args):
 
             flow_up_fwd = flow_up_fwd[0].cpu().numpy().transpose(1, 2, 0)
             flow_up_bwd = flow_up_bwd[0].cpu().numpy().transpose(1, 2, 0)
+
 
             img1 = cv2.resize(np.uint8(np.clip(image1[0].cpu().numpy().transpose(1, 2, 0), 0, 255)), 
                              (img_train.shape[1], img_train.shape[0]), 

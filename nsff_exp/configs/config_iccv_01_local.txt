@@ -1,7 +1,7 @@
-expname = kid-running_ndc_5f_sv_of_sm_unify3
+expname = iccv-01
 
 basedir = ./logs
-datadir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nerf_data/kid-running/dense/
+datadir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nerf_data/iccv-01/dense/
 
 dataset_type = llff
 

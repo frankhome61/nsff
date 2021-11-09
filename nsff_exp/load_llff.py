@@ -22,24 +22,24 @@ def _load_data(basedir, start_frame, end_frame,
     sh = imageio.imread(img0).shape
     
     sfx = ''
-    
-    if factor is not None:
-        sfx = '_{}'.format(factor)
-        # _minify(basedir, factors=[factor])
-        factor = factor
-    elif height is not None:
-        factor = sh[0] / float(height)
-        width = int(round(sh[1] / factor))
-        # width = int((sh[1] / factor))
-        # _minify(basedir, resolutions=[[height, width]])
-        sfx = '_{}x{}'.format(width, height)
-    elif width is not None:
-        factor = sh[1] / float(width)
-        width = int(round(sh[0] / factor))
-        # _minify(basedir, resolutions=[[height, width]])
-        sfx = '_{}x{}'.format(width, height)
-    else:
-        factor = 1
+    factor = 1.0
+    # if factor is not None:
+    #     sfx = '_{}'.format(factor)
+    #     # _minify(basedir, factors=[factor])
+    #     factor = factor
+    # elif height is not None:
+    #     factor = sh[0] / float(height)
+    #     width = int(round(sh[1] / factor))
+    #     # width = int((sh[1] / factor))
+    #     # _minify(basedir, resolutions=[[height, width]])
+    #     sfx = '_{}x{}'.format(width, height)
+    # elif width is not None:
+    #     factor = sh[1] / float(width)
+    #     width = int(round(sh[0] / factor))
+    #     # _minify(basedir, resolutions=[[height, width]])
+    #     sfx = '_{}x{}'.format(width, height)
+    # else:
+    #     factor = 1
 
     imgdir = os.path.join(basedir, 'images' + sfx)
     if not os.path.exists(imgdir):

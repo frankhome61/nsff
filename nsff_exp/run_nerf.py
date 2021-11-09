@@ -163,7 +163,7 @@ def train():
 
     parser = config_parser()
     args = parser.parse_args()
-
+    print(args.datadir)
     # Load data
     if args.dataset_type == 'llff':
         target_idx = args.target_idx
@@ -309,7 +309,7 @@ def train():
 
     poses = torch.Tensor(poses).to(device)
 
-    N_iters = 2000 * 1000 #1000000
+    N_iters = 200 * 1000 #1000000 200000
     print('Begin')
     print('TRAIN views are', i_train)
     print('TEST views are', i_test)
