@@ -1,4 +1,4 @@
-expname = kid-running_ndc_5f_sv_of_sm_unify3
+expname = iccv-01
 
 basedir = /sharedvol1/users/frank/nsff/logs
 datadir = /sharedvol1/users/frank/nsff/data/iccv-01/dense/
