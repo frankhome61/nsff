@@ -1,6 +1,6 @@
 expname = iccv-01
 
-basedir = ./logs
+basedir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nsff_exp/logs
 datadir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nerf_data/iccv-01/dense/
 
 dataset_type = llff

@@ -185,6 +185,7 @@ def render_slowmo_bt(disps, render_poses, bt_poses,
         # depth8 = depth8[:, start_y:start_y+ 512, :]
 
         filename = os.path.join(save_img_dir, '{:03d}.jpg'.format(i))
+        print("Image shape: ", rgb8.shape)
         imageio.imwrite(filename, rgb8)
 
         # filename = os.path.join(save_depth_dir, '{:03d}.jpg'.format(i))
@@ -660,18 +661,21 @@ def render_bullet_time(render_poses, img_idx_embed, num_img,
 
         depth = torch.clamp(ret['depth_map_ref']/percentile(ret['depth_map_ref'], 97), 0., 1.)  #1./disp
         rgb = ret['rgb_map_ref'].cpu().numpy()#.append(ret['rgb_map_ref'].cpu().numpy())
+        print("###### RGB shape: ", rgb.shape)
 
         if savedir is not None:
             rgb8 = to8b(rgb)
             depth8 = to8b(depth.unsqueeze(-1).repeat(1, 1, 3).cpu().numpy())
 
-            start_y = (rgb8.shape[1] - 512) // 2
-            rgb8 = rgb8[:, start_y:start_y+ 512, :]
+            # start_y = (rgb8.shape[1] - 512) // 2
+            # print("start_y: ",  start_y)
+            # rgb8 = rgb8[:, start_y:start_y+ 512, :]
 
             # depth8 = depth8[:, start_y:start_y+ 512, :]
 
             filename = os.path.join(save_img_dir, '{:03d}.jpg'.format(i))
             imageio.imwrite(filename, rgb8)
+            print("saved Image shape: ", rgb8.shape)
 
             # filename = os.path.join(save_depth_dir, '{:03d}.jpg'.format(i))
             # imageio.imwrite(filename, depth8)
