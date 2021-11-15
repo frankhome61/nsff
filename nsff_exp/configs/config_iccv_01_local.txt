@@ -8,10 +8,11 @@ dataset_type = llff
 factor = 2
 llffhold = 10
 
-N_rand = 1024
+N_rand = 128
 N_samples = 128
 N_importance = 0
 netwidth = 256
+render_factor = 2
 
 use_viewdirs = True
 raw_noise_std = 1e0

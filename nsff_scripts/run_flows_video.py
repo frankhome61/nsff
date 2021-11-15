@@ -32,12 +32,15 @@ def run_maskrcnn(model, img_path): #, intWidth=1024, intHeight=576):
 
     width, height = o_image.size
 
-    if width > height:
-        intWidth = 960
-        intHeight = int(round( float(intWidth) / width * height))        
-    else:
-        intHeight = 960
-        intWidth = int(round( float(intHeight) / height * width))        
+    # if width > height:
+    #     intWidth = 960
+    #     intHeight = int(round( float(intWidth) / width * height))        
+    # else:
+    #     intHeight = 960
+    #     intWidth = int(round( float(intHeight) / height * width))      
+
+    intHeight = height 
+    intWidth = width  
 
     print('Semantic Seg Width %d Height %d'%(intWidth, intHeight))
 

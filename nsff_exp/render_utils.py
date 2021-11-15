@@ -104,24 +104,25 @@ def render_slowmo_bt(disps, render_poses, bt_poses,
     os.makedirs(save_img_dir, exist_ok=True)
     # os.makedirs(save_depth_dir, exist_ok=True)
 
-    for i, cur_time in enumerate(np.linspace(target_idx - 10., target_idx + 10., 200 + 1).tolist()):
+    for i, cur_time in enumerate(np.linspace(target_idx - 10., target_idx + 120., 120 + 1).tolist()):
         flow_time = int(np.floor(cur_time))
         ratio = cur_time - np.floor(cur_time)
         print('cur_time ', i, cur_time, ratio)
         t = time.time()
+        print("Render Pose shape: ", render_poses.shape)
+        # int_rot, int_trans = linear_pose_interp(render_poses[flow_time, :3, 3], 
+        #                                         render_poses[flow_time, :3, :3],
+        #                                         render_poses[flow_time + 1, :3, 3], 
+        #                                         render_poses[flow_time + 1, :3, :3], 
+        #                                         ratio)
 
-        int_rot, int_trans = linear_pose_interp(render_poses[flow_time, :3, 3], 
-                                                render_poses[flow_time, :3, :3],
-                                                render_poses[flow_time + 1, :3, 3], 
-                                                render_poses[flow_time + 1, :3, :3], 
-                                                ratio)
+        # int_poses = np.concatenate((int_rot, int_trans[:, np.newaxis]), 1)
+        # int_poses = np.concatenate([int_poses[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0)
 
-        int_poses = np.concatenate((int_rot, int_trans[:, np.newaxis]), 1)
-        int_poses = np.concatenate([int_poses[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0)
+        # int_poses = np.dot(int_poses, bt_poses[i])
 
-        int_poses = np.dot(int_poses, bt_poses[i])
-
-        render_pose = torch.Tensor(int_poses).to(device)
+        # render_pose = torch.Tensor(int_poses).to(device)
+        render_pose = torch.Tensor(render_poses[flow_time]).to(device)
 
         R_w2t = render_pose[:3, :3].transpose(0, 1)
         t_w2t = -torch.matmul(R_w2t, render_pose[:3, 3:4])
@@ -180,8 +181,8 @@ def render_slowmo_bt(disps, render_poses, bt_poses,
         # final_depth = torch.clamp(final_depth/percentile(final_depth, 98), 0., 1.) 
         # depth8 = to8b(final_depth.permute(1, 2, 0).repeat(1, 1, 3).cpu().numpy())
 
-        start_y = (rgb8.shape[1] - 512) // 2
-        rgb8 = rgb8[:, start_y:start_y+ 512, :]
+        # start_y = (rgb8.shape[1] - 512) // 2
+        # rgb8 = rgb8[:, start_y:start_y+ 512, :]
         # depth8 = depth8[:, start_y:start_y+ 512, :]
 
         filename = os.path.join(save_img_dir, '{:03d}.jpg'.format(i))
@@ -273,8 +274,8 @@ def render_lockcam_slowmo(ref_c2w, num_img,
         filename = os.path.join(savedir, '%03d.jpg'%(i))
         rgb8 = to8b(final_rgb.permute(1, 2, 0).cpu().numpy())
 
-        start_y = (rgb8.shape[1] - 512) // 2
-        rgb8 = rgb8[:, start_y:start_y+ 512, :]
+        # start_y = (rgb8.shape[1] - 512) // 2
+        # rgb8 = rgb8[:, start_y:start_y+ 512, :]
 
         imageio.imwrite(filename, rgb8)
 

@@ -235,7 +235,7 @@ def train():
     render_kwargs_train.update(bds_dict)
     render_kwargs_test.update(bds_dict)
 
-
+    print("Render Factor: ", args.render_factor)
     if args.render_bt:
         print('RENDER VIEW INTERPOLATION')
         

@@ -376,8 +376,9 @@ def load_llff_data(basedir, start_frame, end_frame,
         N_views/=2
 
     # Generate poses for spiral path
-    # render_poses = render_path_spiral(c2w_path, up, rads, focal, zdelta, zrate=.5, rots=N_rots, N=N_views)
-    render_poses = render_wander_path(c2w)
+    #render_poses = render_path_spiral(c2w_path, up, rads, focal, zdelta, zrate=.5, rots=N_rots, N=N_views)
+    #render_poses = render_wander_path(c2w)
+    render_poses = np.load(os.path.join(basedir, 'render_poses.npy'))
     render_poses = np.array(render_poses).astype(np.float32)
 
     images = images.astype(np.float32)
