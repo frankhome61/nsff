@@ -378,7 +378,10 @@ def load_llff_data(basedir, start_frame, end_frame,
     # Generate poses for spiral path
     # render_poses = render_path_spiral(c2w_path, up, rads, focal, zdelta, zrate=.5, rots=N_rots, N=N_views)
     render_poses = render_wander_path(c2w)
+    # render_poses = np.load(os.path.join(basedir, "render_poses.npy"))
+    # print("Loaded render pose from disk", render_poses.shape)
     render_poses = np.array(render_poses).astype(np.float32)
+    np.save(os.path.join(basedir, "render_poses.npy"), render_poses)
 
     images = images.astype(np.float32)
     poses = poses.astype(np.float32)
@@ -391,8 +394,7 @@ def load_llff_data(basedir, start_frame, end_frame,
 
 import torch
 
-def create_bt_poses(hwf):
-    num_frames = 40
+def create_bt_poses(hwf, num_frames=40):
     max_disp = 32.0 # 64 , 48
 
     max_trans = max_disp / hwf[2] #self.targets['K_src'][0, 0, 0]  # Maximum camera translation to satisfy max_disp parameter
@@ -423,7 +425,7 @@ def create_bt_poses(hwf):
 
 def render_wander_path(c2w):
     hwf = c2w[:,4:5]
-    num_frames = 60
+    num_frames = 120
     max_disp = 48.0 # 64 , 48
 
     max_trans = max_disp / hwf[2][0] #self.targets['K_src'][0, 0, 0]  # Maximum camera translation to satisfy max_disp parameter
@@ -448,5 +450,4 @@ def render_wander_path(c2w):
         # print('render_pose ', render_pose.shape)
         # sys.exit()
         output_poses.append(np.concatenate([render_pose[:3, :], hwf], 1))
-    
     return output_poses

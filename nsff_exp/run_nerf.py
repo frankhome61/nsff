@@ -18,6 +18,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 np.random.seed(1)
 DEBUG = False
 
+
+
 def config_parser():
 
     import configargparse
@@ -34,6 +36,8 @@ def config_parser():
     parser.add_argument("--render_lockcam_slowmo", action='store_true', 
                         help='render fixed view + slowmo')
     parser.add_argument("--render_slowmo_bt", action='store_true', 
+                        help='render space-time interpolation')
+    parser.add_argument("--render_spiral_llff", action='store_true', 
                         help='render space-time interpolation')
 
     parser.add_argument("--final_height", type=int, default=288, 
@@ -160,7 +164,6 @@ def config_parser():
 
 
 def train():
-
     parser = config_parser()
     args = parser.parse_args()
     print(args.datadir)
@@ -175,6 +178,7 @@ def train():
                                                             recenter=True, bd_factor=.9,
                                                             spherify=args.spherify, 
                                                             final_height=args.final_height)
+        print("loaded render pose shape: ", render_poses.shape)
 
         hwf = poses[0,:3,-1]
         poses = poses[:,:3,:4]
@@ -272,7 +276,30 @@ def train():
                             gt_imgs=images, savedir=testsavedir, 
                             render_factor=args.render_factor,
                             target_idx=target_idx)
+            return 
 
+    if args.render_spiral_llff:
+        print('RENDER spiral llff')
+        print("Render pose shape", render_poses.shape)
+        curr_ts = 0
+        print("raw poses : ", poses.shape)
+        render_poses = render_poses[:, :3,:4] #torch.Tensor(render_poses).to(device)
+        #render_poses = poses #torch.Tensor(poses).to(device)
+        bt_poses = create_bt_poses(hwf) 
+        bt_poses = bt_poses * 10
+
+        num_img = float(poses.shape[0])
+        ref_c2w = torch.Tensor(ref_c2w).to(device)
+        print('target_idx ', target_idx)
+
+        testsavedir = os.path.join(basedir, expname, 'render-spiral-llff')
+        os.makedirs(testsavedir, exist_ok=True)
+        with torch.no_grad():
+            render_spiral_llff(depths, render_poses, bt_poses, 
+                            hwf, args.chunk, render_kwargs_test,
+                            gt_imgs=images, savedir=testsavedir, 
+                            render_factor=args.render_factor, 
+                            target_idx=10)
             return 
 
     if args.render_slowmo_bt:
@@ -295,7 +322,7 @@ def train():
                             hwf, args.chunk, render_kwargs_test,
                             gt_imgs=images, savedir=testsavedir, 
                             render_factor=args.render_factor, 
-                            target_idx=10)
+                            target_idx=10, source_length=30)
             # print('Done rendering', i,testsavedir)
 
         return

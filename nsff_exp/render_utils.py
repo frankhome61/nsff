@@ -110,16 +110,16 @@ def render_slowmo_bt(disps, render_poses, bt_poses,
         print('cur_time ', i, cur_time, ratio)
         t = time.time()
 
-        int_rot, int_trans = linear_pose_interp(render_poses[flow_time, :3, 3], 
-                                                render_poses[flow_time, :3, :3],
-                                                render_poses[flow_time + 1, :3, 3], 
-                                                render_poses[flow_time + 1, :3, :3], 
-                                                ratio)
+        # int_rot, int_trans = linear_pose_interp(render_poses[flow_time, :3, 3], 
+        #                                         render_poses[flow_time, :3, :3],
+        #                                         render_poses[flow_time + 1, :3, 3], 
+        #                                         render_poses[flow_time + 1, :3, :3], 
+        #                                         ratio)
 
-        int_poses = np.concatenate((int_rot, int_trans[:, np.newaxis]), 1)
-        int_poses = np.concatenate([int_poses[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0)
+        # int_poses = np.concatenate((int_rot, int_trans[:, np.newaxis]), 1)
+        # int_poses = np.concatenate([int_poses[:3, :4], np.array([0.0, 0.0, 0.0, 1.0])[np.newaxis, :]], axis=0)
 
-        int_poses = np.dot(int_poses, bt_poses[i])
+        int_poses = np.dot(render_poses[flow_time], bt_poses[i])
 
         render_pose = torch.Tensor(int_poses).to(device)
 
@@ -180,8 +180,8 @@ def render_slowmo_bt(disps, render_poses, bt_poses,
         # final_depth = torch.clamp(final_depth/percentile(final_depth, 98), 0., 1.) 
         # depth8 = to8b(final_depth.permute(1, 2, 0).repeat(1, 1, 3).cpu().numpy())
 
-        start_y = (rgb8.shape[1] - 512) // 2
-        rgb8 = rgb8[:, start_y:start_y+ 512, :]
+        # start_y = (rgb8.shape[1] - 512) // 2
+        # rgb8 = rgb8[:, start_y:start_y+ 512, :]
         # depth8 = depth8[:, start_y:start_y+ 512, :]
 
         filename = os.path.join(save_img_dir, '{:03d}.jpg'.format(i))
@@ -273,9 +273,106 @@ def render_lockcam_slowmo(ref_c2w, num_img,
         filename = os.path.join(savedir, '%03d.jpg'%(i))
         rgb8 = to8b(final_rgb.permute(1, 2, 0).cpu().numpy())
 
-        start_y = (rgb8.shape[1] - 512) // 2
-        rgb8 = rgb8[:, start_y:start_y+ 512, :]
+        # start_y = (rgb8.shape[1] - 512) // 2
+        # rgb8 = rgb8[:, start_y:start_y+ 512, :]
 
+        imageio.imwrite(filename, rgb8)
+
+
+def render_spiral_llff(disps, render_poses, bt_poses, 
+                     hwf, chunk, render_kwargs, 
+                     gt_imgs=None, savedir=None, 
+                     render_factor=0, target_idx=10, source_length=30):
+    # import scipy.io
+
+    H, W, focal = hwf
+
+    if render_factor!=0:
+        # Render downsampled for speed
+        H = H//render_factor
+        W = W//render_factor
+        focal = focal/render_factor
+
+    t = time.time()
+
+    count = 0
+
+    save_img_dir = os.path.join(savedir, 'images')
+    os.makedirs(save_img_dir, exist_ok=True)
+
+    for i, cur_time in enumerate(np.linspace(0, 119, 120).tolist()):
+        flow_time = int(np.floor(cur_time))
+        ratio = cur_time - np.floor(cur_time)
+        print('cur_time ', i, cur_time, ratio)
+        t = time.time()
+
+        #int_poses = np.dot(render_poses[flow_time], bt_poses[i])
+        int_poses = render_poses[flow_time]
+        render_pose = torch.Tensor(int_poses).to(device)
+
+        R_w2t = render_pose[:3, :3].transpose(0, 1)
+        t_w2t = -torch.matmul(R_w2t, render_pose[:3, 3:4])
+
+        num_img = gt_imgs.shape[0]
+        img_idx_embed_1 = (np.floor(cur_time % source_length))/float(num_img) * 2. - 1.0
+        img_idx_embed_2 = (np.floor(cur_time % source_length) + 1)/float(num_img) * 2. - 1.0
+
+        print('img_idx_embed_1 ', cur_time, img_idx_embed_1)
+
+        ret1 = render_sm(img_idx_embed_1, 0, False,
+                        num_img, 
+                        H, W, focal, 
+                        chunk=1024*16, 
+                        c2w=render_pose,
+                        **render_kwargs)
+
+        ret2 = render_sm(img_idx_embed_2, 0, False,
+                        num_img, 
+                        H, W, focal, 
+                        chunk=1024*16, 
+                        c2w=render_pose, 
+                        **render_kwargs)
+
+        T_i = torch.ones((1, H, W))
+        final_rgb = torch.zeros((3, H, W))
+        num_sample = ret1['raw_rgb'].shape[2]
+        # final_depth = torch.zeros((1, H, W))
+        z_vals = ret1['z_vals']
+
+        for j in range(0, num_sample):
+            splat_alpha_dy_1, splat_rgb_dy_1, \
+            splat_alpha_rig_1, splat_rgb_rig_1 = splat_rgb_img(ret1, ratio, R_w2t, t_w2t, 
+                                                            j, H, W, focal, True)
+            splat_alpha_dy_2, splat_rgb_dy_2, \
+            splat_alpha_rig_2, splat_rgb_rig_2 = splat_rgb_img(ret2, 1. - ratio, R_w2t, t_w2t, 
+                                                            j, H, W, focal, False)
+
+            final_rgb += T_i * (splat_alpha_dy_1 * splat_rgb_dy_1 + \
+                                splat_alpha_rig_1 * splat_rgb_rig_1 ) * (1.0 - ratio)
+            final_rgb += T_i * (splat_alpha_dy_2 * splat_rgb_dy_2 + \
+                                splat_alpha_rig_2 * splat_rgb_rig_2 ) * ratio
+            # splat_alpha = splat_alpha1 * (1. - ratio) + splat_alpha2 * ratio
+            # final_rgb += T_i * (splat_alpha1 * (1. - ratio) * splat_rgb1 +  splat_alpha2 * ratio * splat_rgb2)
+
+            alpha_1_final = (1.0 - (1. - splat_alpha_dy_1) * (1. - splat_alpha_rig_1) ) * (1. - ratio)
+            alpha_2_fianl = (1.0 - (1. - splat_alpha_dy_2) * (1. - splat_alpha_rig_2) ) * ratio
+            alpha_final = alpha_1_final + alpha_2_fianl
+
+            # final_depth += T_i * (alpha_final) * z_vals[..., j]
+            T_i = T_i * (1.0 - alpha_final + 1e-10)
+
+        filename = os.path.join(savedir, 'slow-mo_%03d.jpg'%(i))
+        rgb8 = to8b(final_rgb.permute(1, 2, 0).cpu().numpy())
+
+        # final_depth = torch.clamp(final_depth/percentile(final_depth, 98), 0., 1.) 
+        # depth8 = to8b(final_depth.permute(1, 2, 0).repeat(1, 1, 3).cpu().numpy())
+
+        # start_y = (rgb8.shape[1] - 512) // 2
+        # rgb8 = rgb8[:, start_y:start_y+ 512, :]
+        # depth8 = depth8[:, start_y:start_y+ 512, :]
+
+        filename = os.path.join(save_img_dir, '{:03d}.jpg'.format(i))
+        print("Image shape: ", rgb8.shape)
         imageio.imwrite(filename, rgb8)
 
 
