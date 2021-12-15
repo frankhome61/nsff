@@ -261,8 +261,8 @@ def load_nvidia_data(basedir, start_frame, end_frame,
     bds = np.moveaxis(bds, -1, 0).astype(np.float32)
 
     # Rescale if bd_factor is provided
-    sc = 1. if bd_factor is None else 1./(np.percentile(bds[:, 0], 5) * bd_factor)
-    # sc = 1. if bd_factor is None else 1./(bds.min() * bd_factor)
+    # sc = 1. if bd_factor is None else 1./(np.percentile(bds[:, 0], 5) * bd_factor)
+    sc = 1./(bds.max() - bds.min())
     poses[:,:3,3] *= sc
 
     bds *= sc

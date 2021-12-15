@@ -1,4 +1,4 @@
-expname = synthetic-01
+expname = synthetic-01-sc
 
 basedir = /sharedvol1/users/frank/nsff/logs
 datadir = /sharedvol1/users/frank/nsff/data/synthetic-01/dense/
