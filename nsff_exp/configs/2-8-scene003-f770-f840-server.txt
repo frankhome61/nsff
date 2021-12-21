@@ -1,7 +1,7 @@
-expname = synthetic-00
+expname = scene003-f770-f840
 
 basedir = /sharedvol1/users/frank/nsff/logs
-datadir = /sharedvol1/users/frank/nsff/data/synthetic-00/dense/
+datadir = /sharedvol1/users/frank/nsff/data/test_output_2_8/scene003-f770-f840/dense/
 
 dataset_type = llff
 

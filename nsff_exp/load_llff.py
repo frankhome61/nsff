@@ -261,8 +261,8 @@ def load_nvidia_data(basedir, start_frame, end_frame,
     bds = np.moveaxis(bds, -1, 0).astype(np.float32)
 
     # Rescale if bd_factor is provided
-    # sc = 1. if bd_factor is None else 1./(np.percentile(bds[:, 0], 5) * bd_factor)
-    sc = 1./(bds.max() - bds.min())
+    sc = 1. if bd_factor is None else 1./(np.percentile(bds[:, 0], 5) * bd_factor)
+    # sc = 1./(bds.max() - bds.min())
     poses[:,:3,3] *= sc
 
     bds *= sc
@@ -381,7 +381,11 @@ def load_llff_data(basedir, start_frame, end_frame,
     # render_poses = np.load(os.path.join(basedir, "render_poses.npy"))
     # print("Loaded render pose from disk", render_poses.shape)
     render_poses = np.array(render_poses).astype(np.float32)
-    np.save(os.path.join(basedir, "render_poses.npy"), render_poses)
+    #np.save(os.path.join(basedir, "render_poses.npy"), render_poses)
+    # print("Render pose saved")
+
+    render_poses = np.load(os.path.join(basedir, "render_poses.npy"))
+    print("Render pose loaded")
 
     images = images.astype(np.float32)
     poses = poses.astype(np.float32)

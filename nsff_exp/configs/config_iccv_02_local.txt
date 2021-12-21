@@ -1,7 +1,7 @@
-expname = synthetic-00
+expname = iccv-02
 
-basedir = /sharedvol1/users/frank/nsff/logs
-datadir = /sharedvol1/users/frank/nsff/data/synthetic-00/dense/
+basedir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nsff_exp/logs
+datadir = /home/guowei/Research/View-Synthesis-Current-Works/Neural-Scene-Flow-Fields/nerf_data/iccv-02/dense/
 
 dataset_type = llff
 
@@ -12,6 +12,7 @@ N_rand = 1024
 N_samples = 128
 N_importance = 0
 netwidth = 256
+render_factor = 2
 
 use_viewdirs = True
 raw_noise_std = 1e0

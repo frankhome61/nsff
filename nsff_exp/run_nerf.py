@@ -250,8 +250,8 @@ def train():
         img_idx_embed = target_idx/float(num_img) * 2. - 1.0
 
         testsavedir = os.path.join(basedir, expname, 
-                                'render-spiral-frame-%03d'%\
-                                target_idx + '_{}_{:06d}'.format('test' if args.render_test else 'path', start))
+                                'frame%05d'%\
+                                target_idx) # + '_{}_{:06d}'.format('test' if args.render_test else 'path', start))
         os.makedirs(testsavedir, exist_ok=True)
         with torch.no_grad():
             render_bullet_time(render_poses, img_idx_embed, num_img, hwf, 
@@ -299,7 +299,7 @@ def train():
                             hwf, args.chunk, render_kwargs_test,
                             gt_imgs=images, savedir=testsavedir, 
                             render_factor=args.render_factor, 
-                            target_idx=10)
+                            target_idx=10, source_length=120)
             return 
 
     if args.render_slowmo_bt:

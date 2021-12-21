@@ -747,6 +747,7 @@ def render_bullet_time(render_poses, img_idx_embed, num_img,
 
     for i in range(0, (render_poses.shape[0])):
         c2w = render_poses[i]
+        print(c2w)
         print(i, time.time() - t)
         t = time.time()
 
